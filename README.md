@@ -1,2 +1,4 @@
-# auto-currency-converter-extension
-Project for HackBU 2015
+#Auto Currency Converter
+
+##Project for HackBU 2015
+##-Tim Hung

@@ -1,0 +1,37 @@
+{
+    "manifest_version": 2,
+    "name": "auto-currency-converter",
+    "version": "1",
+
+	"default_locale": "en",
+
+	"description": "A plain text description",
+
+	"icons": { "16": "icon16.png",
+           "48": "icon48.png",
+          "128": "icon128.png" },
+
+	"browser_action": {
+        "default_title": "Auto Currency Converter",
+        "default_icon": "icon.png",
+        "default_popup": "popup.html"
+    },
+
+    "permissions": [
+        "tabs",
+        "http://*/*",
+        "https://*/*",
+        "storage"
+    ],
+    
+    "content_scripts": [
+    {
+        "matches": ["http://*/*","https://*/*"],
+        "js": ["myscript.js"],
+        "run_at": "document_end"
+    }
+    ],
+
+    "author": "Tim Hung"
+
+}
