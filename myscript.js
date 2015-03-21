@@ -1,26 +1,58 @@
-alert("myscript.js is running");
+//alert("myscript.js is running");
+
+//console.log(JSON.parse(httpGet("https://rate-exchange.appspot.com/currency?from=USD&to=EUR")).rate);
+//console.log(getCurrencyCode('€'));
+//console.log(getConversionRate('USD','EUR'));
+
+var prefCurrency;
+
+chrome.storage.sync.get('prefCurrency', function(obj) {
+	console.log('prefCurrency', obj.prefCurrency);
+	prefCurrency = obj.prefCurrency;
 
 
-var regex = /[\$\€\£\元\¥]{1}\ ?[+-]?[0-9]{1,3}(?:,?[0-9])*(?:\.[0-9]{1,2})?/g;
-//document.body.innerHTML = document.body.innerHTML.replace(regex , "OAIJSDOFIJAO ");
+	console.log(prefCurrency);
 
-var found = document.body.innerHTML.match(regex);
+	var regex = /[\$\€\£\元\¥]{1}\ ?[+-]?[0-9]{1,3}(?:,?[0-9])*(?:\.[0-9]{1,2})?/g;
+	//document.body.innerHTML = document.body.innerHTML.replace(regex , "OAIJSDOFIJAO ");
 
-alert("found is " + found);
+	var found = document.body.innerHTML.match(regex);
 
-var index;
-for(index in found){
-	//alert(found[index]);
-	var value = found[index];
-	var symbol = value.charAt(0);
-	var quantity = value.substring(1);
+	alert("found is " + found);
 
-	alert("symbol: " + symbol + " | quantity: " + quantity);
-}
+	var index;
+	for(index in found){
+		var value = found[index];
+		var symbol = value.charAt(0);
+		var quantity = value.substring(1);
+
+		//alert("symbol: " + symbol + " | quantity: " + quantity);
+
+		console.log(value + " to " + prefCurrency + " = " + convert(symbol,quantity));
+
+		document.body.innerHTML = document.body.innerHTML.replace(found[index], getCurrencySymbol(prefCurrency)+convert(symbol,quantity));
+
+	}
+
+	//console.log(value + " to " + prefCurrency + " = " + convert("$","1.00"));
+
+	function convert(symbol, quantity) {
+	    var rate = getConversionRate(getCurrencyCode(symbol), prefCurrency);
+	    //return Math.round(quantity * rate * 100) / 100;
+	    //console.log('q: ' + quantity + " | r: " + rate);
+		return Math.round(parseFloat(quantity) * parseFloat(rate) * 100) / 100;
+	}
 
 
-function convert(symbol, quantity) {
-    
+
+
+});
+
+function getConversionRate(from, to) {
+	//http://rate-exchange.appspot.com/currency?from=USD&to=EUR
+	var url = 'https://rate-exchange.appspot.com/currency?from=' + from + '&to=' + to;
+	var response = JSON.parse(httpGet(url));
+	return response.rate;
 }
 
 function getCurrencyCode(symbol) {
@@ -40,11 +72,29 @@ function getCurrencyCode(symbol) {
 	}
 }
 
+function getCurrencySymbol(code) {
+	switch(code) {
+		case 'USD':
+	        return "$";
+        case 'EUR':
+	        return "€";
+	    case 'GBP':
+	        return "£";
+        case 'CNY':
+	        return "元";
+	    case 'JPY':
+	        return "¥";
+	    default:
+	        return null;
+	}
+}
+
 function httpGet(theUrl) {
     var xmlHttp = null;
 
     xmlHttp = new XMLHttpRequest();
     xmlHttp.open( "GET", theUrl, false );
     xmlHttp.send( null );
-    return xmlHttp.responseText;
+    //console.log(xmlHttp.response);
+    return xmlHttp.response;
 }
