@@ -1,3 +1,15 @@
+/*
+TODO
+
+-Add trailing zeros
+-Pretty GUI
+-Conversion in separate thread
+-Symbol badge on icon
+
+*/
+
+
+
 //alert("myscript.js is running");
 
 //console.log(JSON.parse(httpGet("https://rate-exchange.appspot.com/currency?from=USD&to=EUR")).rate);
@@ -10,7 +22,6 @@ chrome.storage.sync.get('prefCurrency', function(obj) {
 	console.log('prefCurrency', obj.prefCurrency);
 	prefCurrency = obj.prefCurrency;
 
-
 	console.log(prefCurrency);
 
 	var regex = /[\$\€\£\元\¥]{1}\ ?[+-]?[0-9]{1,3}(?:,?[0-9])*(?:\.[0-9]{1,2})?/g;
@@ -18,13 +29,22 @@ chrome.storage.sync.get('prefCurrency', function(obj) {
 
 	var found = document.body.innerHTML.match(regex);
 
-	alert("found is " + found);
+	//alert("found is " + found);
 
 	var index;
+	var rates = {"key": "value"};
+
 	for(index in found){
 		var value = found[index];
 		var symbol = value.charAt(0);
-		var quantity = value.substring(1);
+		var quantity = value.substring(1).replace(',', '');
+
+
+		//Check if symbol is in rates
+		// if(rates[symbol] === null) {
+		// 	rates[symbol] = 
+		// }
+
 
 		//alert("symbol: " + symbol + " | quantity: " + quantity);
 
@@ -40,7 +60,11 @@ chrome.storage.sync.get('prefCurrency', function(obj) {
 	    var rate = getConversionRate(getCurrencyCode(symbol), prefCurrency);
 	    //return Math.round(quantity * rate * 100) / 100;
 	    //console.log('q: ' + quantity + " | r: " + rate);
-		return Math.round(parseFloat(quantity) * parseFloat(rate) * 100) / 100;
+		var converted = Math.round(parseFloat(quantity) * parseFloat(rate) * 100) / 100;
+
+		//Add trailing zeros
+
+		return converted;
 	}
 
 
