@@ -1,82 +1,63 @@
 /*
 TODO
 
--Add trailing zeros
 -Pretty GUI
--Conversion in separate thread
--Symbol badge on icon
+-Use new API
 
 */
-
-
-
-//alert("myscript.js is running");
-
-//console.log(JSON.parse(httpGet("https://rate-exchange.appspot.com/currency?from=USD&to=EUR")).rate);
-//console.log(getCurrencyCode('€'));
-//console.log(getConversionRate('USD','EUR'));
+console.log("myscript.js is running.");
 
 var prefCurrency;
 
 chrome.storage.sync.get('prefCurrency', function(obj) {
-	console.log('prefCurrency', obj.prefCurrency);
+	console.log("getting prefCurrency");
+
 	prefCurrency = obj.prefCurrency;
-
-	console.log(prefCurrency);
-
 	var regex = /[\$\€\£\元\¥]{1}\ ?[+-]?[0-9]{1,3}(?:,?[0-9])*(?:\.[0-9]{1,2})?/g;
-	//document.body.innerHTML = document.body.innerHTML.replace(regex , "OAIJSDOFIJAO ");
-
 	var found = document.body.innerHTML.match(regex);
-
-	//alert("found is " + found);
-
 	var index;
-	var rates = {"key": "value"};
+	var rates = {};
+
+	console.log('found: ' + found);
 
 	for(index in found){
 		var value = found[index];
 		var symbol = value.charAt(0);
-		var quantity = value.substring(1).replace(',', '');
+		var quantity = accounting.unformat(value);
 
+		//Don't convert preferred currency into itself
+		if(getCurrencyCode(symbol) != prefCurrency) {
+			
+			//Check if symbol is in rates
+			if(rates[symbol] == null) {
+				console.log("setting new conversion rate" + getConversionRate(getCurrencyCode(symbol), prefCurrency));
+				rates[symbol] = getConversionRate(getCurrencyCode(symbol), prefCurrency);
+			}
+			
+			console.log("rates[" + symbol + "] = " + rates[symbol]);
+			console.log(rates[symbol] * quantity);
 
-		//Check if symbol is in rates
-		// if(rates[symbol] === null) {
-		// 	rates[symbol] = 
-		// }
+			var converted = accounting.formatMoney(rates[symbol] * quantity);
 
-
-		//alert("symbol: " + symbol + " | quantity: " + quantity);
-
-		console.log(value + " to " + prefCurrency + " = " + convert(symbol,quantity));
-
-		document.body.innerHTML = document.body.innerHTML.replace(found[index], getCurrencySymbol(prefCurrency)+convert(symbol,quantity));
-
+			console.log(value + " to " + prefCurrency + " = " + converted);
+			document.body.innerHTML = document.body.innerHTML.replace(found[index], converted);
+		}		
 	}
-
-	//console.log(value + " to " + prefCurrency + " = " + convert("$","1.00"));
-
-	function convert(symbol, quantity) {
-	    var rate = getConversionRate(getCurrencyCode(symbol), prefCurrency);
-	    //return Math.round(quantity * rate * 100) / 100;
-	    //console.log('q: ' + quantity + " | r: " + rate);
-		var converted = Math.round(parseFloat(quantity) * parseFloat(rate) * 100) / 100;
-
-		//Add trailing zeros
-
-		return converted;
-	}
-
-
-
-
 });
 
 function getConversionRate(from, to) {
-	//http://rate-exchange.appspot.com/currency?from=USD&to=EUR
-	var url = 'https://rate-exchange.appspot.com/currency?from=' + from + '&to=' + to;
-	var response = JSON.parse(httpGet(url));
-	return response.rate;
+	//http://www.freecurrencyconverterapi.com/api/v3/convert?q=USD_PHP&compact=y
+	var convString = from + '_' + to;
+	var url = 'http://www.freecurrencyconverterapi.com/api/v3/convert?q=' + convString + '&compact=y';
+	console.log('Before getJSON -> convString: ' + convString);
+	$.getJSON(url, function(data) {
+			console.log('convString: ' + convString);
+			console.log('url: ' + url)
+			console.log('data: ' + JSON.stringify(data));
+    		console.log(data[convString]["val"]);
+    		//return data[convString]["val"];
+		}
+	);
 }
 
 function getCurrencyCode(symbol) {
@@ -111,14 +92,4 @@ function getCurrencySymbol(code) {
 	    default:
 	        return null;
 	}
-}
-
-function httpGet(theUrl) {
-    var xmlHttp = null;
-
-    xmlHttp = new XMLHttpRequest();
-    xmlHttp.open( "GET", theUrl, false );
-    xmlHttp.send( null );
-    //console.log(xmlHttp.response);
-    return xmlHttp.response;
 }
