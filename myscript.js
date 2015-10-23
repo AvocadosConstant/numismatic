@@ -5,57 +5,68 @@ TODO
 -Use new API
 
 */
-console.log("myscript.js is running.");
+if(dev) console.log("myscript.js is running.");
 
 var prefCurrency;
+var rates = {};
+var dev = true;
 
 chrome.storage.sync.get('prefCurrency', function(obj) {
-	console.log("getting prefCurrency");
+	if(dev) console.log("getting prefCurrency");
 
 	prefCurrency = obj.prefCurrency;
 	var regex = /[\$\€\£\元\¥]{1}\ ?[+-]?[0-9]{1,3}(?:,?[0-9])*(?:\.[0-9]{1,2})?/g;
 	var found = document.body.innerHTML.match(regex);
 	var index;
-	var rates = {};
 
-	console.log('found: ' + found);
+	if(dev) console.log('found: ' + found);
 
 	for(index in found){
 		var value = found[index];
 		var symbol = value.charAt(0);
-		var quantity = accounting.unformat(value);
+		var quantity = value.substring(1).replace(',', '');
 
 		//Don't convert preferred currency into itself
 		if(getCurrencyCode(symbol) != prefCurrency) {
 			
 			//Check if symbol is in rates
-			if(rates[symbol] == null) {
-				console.log("setting new conversion rate" + getConversionRate(getCurrencyCode(symbol), prefCurrency));
-				rates[symbol] = getConversionRate(getCurrencyCode(symbol), prefCurrency);
+			if(rates[symbol] === undefined) {
+				if(dev) console.log("setting new conversion rate");
+				
+				getConversionRate(getCurrencyCode(symbol), prefCurrency, function(){
+					if(dev) console.log("rates[" + symbol + "] = " + rates[symbol]);
+					if(dev) console.log(rates[symbol] * quantity);
+
+					var converted = accounting.formatMoney(rates[symbol] * quantity, getCurrencySymbol(prefCurrency));
+
+					if(dev) console.log(value + " to " + prefCurrency + " = " + converted);
+					document.body.innerHTML = document.body.innerHTML.replace(found[index], converted);
+				});
 			}
-			
-			console.log("rates[" + symbol + "] = " + rates[symbol]);
-			console.log(rates[symbol] * quantity);
-
-			var converted = accounting.formatMoney(rates[symbol] * quantity);
-
-			console.log(value + " to " + prefCurrency + " = " + converted);
-			document.body.innerHTML = document.body.innerHTML.replace(found[index], converted);
+			else {
+				if(dev) console.log("rates[" + symbol + "] = " + rates[symbol]);
+				if(dev) console.log(rates[symbol] * quantity);
+				var converted = accounting.formatMoney(rates[symbol] * quantity);
+				if(dev) console.log(value + " to " + prefCurrency + " = " + converted);
+				document.body.innerHTML = document.body.innerHTML.replace(found[index], converted);
+			}
 		}		
 	}
 });
 
-function getConversionRate(from, to) {
+function getConversionRate(from, to, callback) {
 	//http://www.freecurrencyconverterapi.com/api/v3/convert?q=USD_PHP&compact=y
 	var convString = from + '_' + to;
 	var url = 'http://www.freecurrencyconverterapi.com/api/v3/convert?q=' + convString + '&compact=y';
-	console.log('Before getJSON -> convString: ' + convString);
+	if(dev) console.log('Before getJSON -> convString: ' + convString);
 	$.getJSON(url, function(data) {
-			console.log('convString: ' + convString);
-			console.log('url: ' + url)
-			console.log('data: ' + JSON.stringify(data));
-    		console.log(data[convString]["val"]);
-    		//return data[convString]["val"];
+			if(dev) console.log('convString: ' + convString);
+			if(dev) console.log('url: ' + url)
+			if(dev) console.log('data: ' + JSON.stringify(data));
+   			if(dev) console.log('data[convString]["val"]: ' + data[convString]["val"]);
+     		rates[getCurrencySymbol(from)] = data[convString]["val"];
+   			if(dev) console.log('rates: ' + JSON.stringify(rates));
+    		callback();
 		}
 	);
 }
